@@ -158,14 +158,19 @@ class Http4sConsulTests extends FlatSpec with Matchers with TypeCheckedTripleEqu
       ))
   }
 
+  it should "fail when the response is 500" in {
+    val response = consulResponse(Status.InternalServerError, "")
+    val csl = constantConsul(response)
+    helm.run(csl, ConsulOp.agentEnableMaintenanceMode("testService", true, None)).attempt.unsafeRunSync should ===(
+      Left(UnexpectedStatus(Status.InternalServerError)))
+  }
+
   "catalogservice" should "succeed with the proper result when the response is 200" in {
     val response = consulResponse(Status.Ok, catalogServicesReplyJson)
     val csl = constantConsul(response)
     helm.run(csl, ConsulOp.catalogService("test")).attempt.unsafeRunSync should ===(
       Right(catalogServiceReturnValue))
   }
-
-
 
   it should "fail when the response is 500" in {
     val response = consulResponse(Status.InternalServerError, "boo")
