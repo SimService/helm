@@ -32,6 +32,7 @@ final class Http4sConsulClient[F[_]](
   private implicit val listHealthChecksDecoder: EntityDecoder[F, List[HealthCheckResponse]] = jsonOf[F, List[HealthCheckResponse]]
   private implicit val listHealthNodesForServiceResponseDecoder: EntityDecoder[F, List[HealthNodesForServiceResponse]] =
     jsonOf[F, List[HealthNodesForServiceResponse]]
+  private implicit val catalogServiceDecoder: EntityDecoder[F, List[CatalogServiceResponse]] = jsonOf[F, List[CatalogServiceResponse]]
 
   private val log = Logger[this.type]
 
@@ -54,6 +55,7 @@ final class Http4sConsulClient[F[_]](
     case ConsulOp.AgentListServices               => agentListServices()
     case ConsulOp.AgentEnableMaintenanceMode(id, enable, reason) =>
       agentEnableMaintenanceMode(id, enable, reason)
+    case ConsulOp.CatalogService(service)               => catalogService(service)
   }
 
   def addConsulToken(req: Request[F]): Request[F] =
@@ -236,5 +238,19 @@ final class Http4sConsulClient[F[_]](
           uri = (baseUri / "v1" / "agent" / "service" / "maintenance" / id).+?("enable", enable).+??("reason", reason))))
       response  <- client.expect[String](req)
     } yield log.debug(s"setting maintenance mode for service $id to $enable resulted in $response")
+  }
+
+def catalogService(service: String): F[List[CatalogServiceResponse]] = {
+    for {
+      _ <- F.delay(log.debug(s"fetching nodes for service $service from catalog API"))
+      req = addCreds(addConsulToken(
+        Request(
+          uri =
+            (baseUri / "v1" / "catalog" / "service" / service))))
+      response <- client.expect[List[CatalogServiceResponse]](req)
+    } yield {
+      log.debug(s"health check response: " + response)
+      response
+    }
   }
 }
