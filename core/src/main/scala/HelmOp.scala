@@ -65,6 +65,8 @@ object ConsulOp {
 
   final case class AgentEnableMaintenanceMode(id: String, enable: Boolean, reason: Option[String]) extends ConsulOp[Unit]
 
+  final case class CatalogService(service: String) extends ConsulOp[List[CatalogServiceResponse]]
+
   type ConsulOpF[A] = Free[ConsulOp, A]
 
   def kvGet(key: Key): ConsulOpF[Option[String]] =
@@ -137,4 +139,6 @@ object ConsulOp {
 
   def agentEnableMaintenanceMode(id: String, enable: Boolean, reason: Option[String]): ConsulOpF[Unit] =
     liftF(AgentEnableMaintenanceMode(id, enable, reason))
+
+  def catalogService(service: String): ConsulOpF[List[CatalogServiceResponse]] = liftF(CatalogService(service))
 }

@@ -158,6 +158,15 @@ class Http4sConsulTests extends FlatSpec with Matchers with TypeCheckedTripleEqu
       ))
   }
 
+  "catalogservice" should "succeed with the proper result when the response is 200" in {
+    val response = consulResponse(Status.Ok, catalogServicesReplyJson)
+    val csl = constantConsul(response)
+    helm.run(csl, ConsulOp.catalogService("test")).attempt.unsafeRunSync should ===(
+      Right(catalogServiceReturnValue))
+  }
+
+
+
   it should "fail when the response is 500" in {
     val response = consulResponse(Status.InternalServerError, "boo")
     val csl = constantConsul(response)
@@ -392,4 +401,49 @@ object Http4sConsulTests {
         123455121300L,
         123455121321L)
     )
+
+  val catalogServicesReplyJson = """[
+  {
+    "ID": "test",
+    "Node": "test.node",
+    "Address": "192.168.1.145",
+    "Datacenter": "test.datacenter",
+    "TaggedAddresses": {
+      "lan": "192.168.1.145",
+      "wan": "192.168.1.145"
+    },
+    "NodeMeta": {
+      "consul-network-segment": ""
+    },
+    "ServiceID": "test.serviceid",
+    "ServiceName": "test.servicename",
+    "ServiceTags": ["test.tag"],
+    "ServiceAddress": "test.serviceaddress",
+    "ServicePort": 1234,
+    "ServiceEnableTagOverride": false,
+    "CreateIndex": 123456789,
+    "ModifyIndex": 123456789
+  }
+]"""
+
+val catalogServiceReturnValue =
+    List(
+      CatalogServiceResponse(
+        "test",
+        "test.node",
+        "192.168.1.145",
+        "test.datacenter",
+        TaggedAddresses("192.168.1.145", "192.168.1.145"),
+        Map("consul-network-segment" -> ""),
+        "test.serviceid",
+        "test.servicename",
+        List("test.tag"),
+        "test.serviceaddress",
+        1234,
+        false,
+        123456789,
+        123456789
+      )
+    )
+
 }
